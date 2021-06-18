@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var API_KEY string
+
 type Auth struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -45,8 +47,14 @@ func (handler *AuthHandler) GenerateToken(c *gin.Context) {
 		c.JSON(response.BadRequest())
 	}
 	apiKey, ok := body["api_key"].(string)
+
 	if !ok || apiKey == "" {
 		code, result := response.BadRequestMsg("api_key must not be null")
+		c.JSON(code, result)
+		return
+	}
+	if apiKey != API_KEY {
+		code, result := response.BadRequestMsg("api_key does not exist")
 		c.JSON(code, result)
 		return
 	}

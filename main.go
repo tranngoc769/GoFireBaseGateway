@@ -83,6 +83,8 @@ func init() {
 		ExpiredTime: viper.GetInt(`oauth.expired_in`),
 		TokenType:   viper.GetString(`oauth.tokenType`),
 	})
+	// API KEY
+	api.API_KEY = viper.GetString(`oauth.api_key`)
 	config = cfg
 }
 

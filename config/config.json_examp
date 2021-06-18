@@ -18,6 +18,7 @@
         "password": ""
     },
     "oauth": {
+        "api_key": "1d3b8b43-b654-438e-be83-eb0e14b6af5c",
         "tokenType": "Bearer",
         "expired_in": "15552000"
     }
