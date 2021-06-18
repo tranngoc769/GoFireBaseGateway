@@ -35,3 +35,11 @@ func (repo *FireBaseRepository) CreateEvent(event model.EventBody) (interface{},
 	}
 	return data, nil
 }
+
+func (repo *FireBaseRepository) Truncate() (interface{}, error) {
+	err := EventRef.Delete(FireBaseContext)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}

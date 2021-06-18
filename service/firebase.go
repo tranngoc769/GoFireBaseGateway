@@ -30,3 +30,11 @@ func (service *FireBaseService) CreateEvent(event model.EventBody) (int, interfa
 	}
 	return response.NewOKResponse(FireBaseRes)
 }
+func (service *FireBaseService) Truncate() (int, interface{}) {
+	FireBaseRes, err := repository.FireBaseRepo.Truncate()
+	if err != nil {
+		log.Error("FireBaseService", "Truncate", err)
+		return response.ServiceUnavailableMsg(err.Error())
+	}
+	return response.NewOKResponse(FireBaseRes)
+}

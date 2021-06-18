@@ -23,6 +23,7 @@ func NewFireBaseHandler(r *gin.Engine, FireBaseService service.FireBaseService) 
 	{
 		v1.GET("", mdw.AuthMiddleware(), handler.GetFireBases)
 		v1.POST("/event", mdw.AuthMiddleware(), handler.CreateEventFirebase)
+		v1.POST("/truncate", mdw.AuthMiddleware(), handler.Truncate)
 	}
 }
 func (handler *FireBaseHandler) GetFireBases(c *gin.Context) {
@@ -33,7 +34,10 @@ func (handler *FireBaseHandler) GetFireBases(c *gin.Context) {
 	}
 	c.JSON(200, result)
 }
-
+func (handler *FireBaseHandler) Truncate(c *gin.Context) {
+	code, result := handler.FireBaseService.Truncate()
+	c.JSON(code, result)
+}
 func (handler *FireBaseHandler) CreateEventFirebase(c *gin.Context) {
 	bodyBytes, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
