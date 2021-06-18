@@ -1,0 +1,24 @@
+{
+    "main": {
+        "port": "8000",
+        "log_type": "FILE",
+        "log_level": "debug",
+        "log_file": "tmp/console.log",
+        "log_addr": "113.164.246.7:4021"
+    },
+    "firebase": {
+        "database_url": "https://test12312-b548f-default-rtdb.firebaseio.com",
+        "config_file": "config/firebase_key.json",
+        "database_document": "events"
+    },
+    "redis": {
+        "address": "localhost:6379",
+        "port": "6379",
+        "database": 2,
+        "password": ""
+    },
+    "oauth": {
+        "tokenType": "Bearer",
+        "expired_in": "15552000"
+    }
+}

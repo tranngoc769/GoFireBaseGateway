@@ -1,10 +1,9 @@
 package main
 
 import (
+	"context"
 	"go-firebase-gateway/api"
 	"go-firebase-gateway/common/auth"
-	util "go-firebase-gateway/common/redis"
-	"go-firebase-gateway/internal/middleware"
 	IRedis "go-firebase-gateway/internal/redis"
 	redis "go-firebase-gateway/internal/redis/driver"
 	"go-firebase-gateway/repository"
@@ -13,9 +12,12 @@ import (
 	"os"
 	"path/filepath"
 
+	firebase "firebase.google.com/go"
+
 	"github.com/caarlos0/env"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"google.golang.org/api/option"
 	"gopkg.in/Graylog2/go-gelf.v2/gelf"
 )
 
@@ -27,22 +29,16 @@ type Config struct {
 	LogFile  string
 	LogAddr  string
 	DB       string
-}
-type DBConfig struct {
-	Driver          string
-	Host            string
-	Port            string
-	Username        string
-	Password        string
-	Database        string
-	SSLMode         string
-	Timeout         int
-	MaxOpenConns    int
-	MaxIdleConns    int
-	MaxConnLifetime int
+	Firebase
 }
 
 var config Config
+
+type Firebase struct {
+	DatabaseURL string
+	ConfigFile  string
+	Document    string
+}
 
 func init() {
 	if err := env.Parse(&config); err != nil {
@@ -54,6 +50,11 @@ func init() {
 		log.Println(err.Error())
 		panic(err)
 	}
+	firebaseConfig := Firebase{
+		DatabaseURL: viper.GetString(`firebase.database_url`),
+		ConfigFile:  viper.GetString(`firebase.config_file`),
+		Document:    viper.GetString(`firebase.database_document`),
+	}
 	cfg := Config{
 		Dir:      config.Dir,
 		Port:     viper.GetString(`main.port`),
@@ -62,8 +63,8 @@ func init() {
 		LogFile:  viper.GetString(`main.log_file`),
 		LogAddr:  viper.GetString(`main.log_addr`),
 		DB:       viper.GetString(`main.db`),
+		Firebase: firebaseConfig,
 	}
-
 	var err error
 	IRedis.Redis, err = redis.NewRedis(redis.Config{
 		Addr:         viper.GetString(`redis.address`),
@@ -75,10 +76,6 @@ func init() {
 		ReadTimeout:  20,
 		WriteTimeout: 15,
 	})
-	util.CallBackListID = viper.GetString(`callback_list_requestid`)
-	util.CallBackRequestHash = viper.GetString(`callback_request_hash`)
-	util.HookCallStatusListID = viper.GetString(`hook_list_lead_id`)
-	util.HookCallStatusHash = viper.GetString(`hook_hash_lead_id`)
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +91,22 @@ func main() {
 	file, _ := os.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	defer file.Close()
 	setAppLogger(config, file)
+	// FIREBASE CONFIG
+	repository.FireBaseContext = context.Background()
+	conf := &firebase.Config{
+		DatabaseURL: config.Firebase.DatabaseURL,
+	}
+	opt := option.WithCredentialsFile(config.Firebase.ConfigFile)
+	app, err := firebase.NewApp(repository.FireBaseContext, conf, opt)
+	if err != nil {
+		log.Fatalln("Error initializing firebase app:", err)
+	}
+	client, err := app.Database(repository.FireBaseContext)
+	if err != nil {
+		log.Fatalln("Error initializing database client:", err)
+	}
+	repository.EventRef = client.NewRef(config.Firebase.Document)
+	// END
 	repository.AuthRepo = repository.NewAuthRepository()
 	server := api.NewServer()
 	// AUTHEN API
@@ -102,8 +115,7 @@ func main() {
 	// FIREBASE API
 	firebaseService := service.NewFireBaseService()
 	api.NewFireBaseHandler(server.Engine, firebaseService)
-	middleware.ApiPath = "api/uaa/oauth/token?grant_type=client_credentials"
-	middleware.BasicAuth = "dGVsX2RzYV9jbGllbnQ6QXdvaXVyYVNpb2ZoYW9mMDc0cnQ="
+
 	server.Start(config.Port)
 }
 func setAppLogger(cfg Config, file *os.File) {
