@@ -180,7 +180,7 @@ func CreateAccessToken(client AuthClient) model.AccessToken {
 
 func GenerateJWT(id string, data map[string]string) string {
 	claim := jwt.MapClaims{
-		"iss": "crm-api",
+		"iss": "go-firebase-gateway-api",
 		"sub": "tel4vn",
 		"aud": "tel4vn",
 		"jti": id,
